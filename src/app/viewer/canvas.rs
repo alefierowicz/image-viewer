@@ -9,24 +9,18 @@ const MIN_LABEL_ZOOM: f32 = 30.0;
 impl ViewerApp {
     /// central panel with the image
     pub(super) fn show_canvas(&mut self, ui: &mut egui::Ui) {
-        let Some(file) = self.files.get(self.current) else { return };
+        let Some(file) = &self.file else { return };
 
         egui::CentralPanel::default().show(ui, |ui| {
             let Some(texture) = &self.texture else {
                 ui.label("cannot display this image");
                 return;
             };
-            Self::show_image(ui, self.frame, texture, &mut self.view, &file.volume);
+            Self::show_image(ui, texture, &mut self.view, &file.volume);
         });
     }
 
-    fn show_image(
-        ui: &mut egui::Ui,
-        frame: usize,
-        texture: &egui::TextureHandle,
-        view: &mut Option<View>,
-        volume: &Volume,
-    ) {
+    fn show_image(ui: &mut egui::Ui, texture: &egui::TextureHandle, view: &mut Option<View>, volume: &Volume) {
         // reserving space to paint image
         // rect is the size of the free space, response - what we did just now (ie. click drag zoom whatever)
         let (rect, response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::click_and_drag());
@@ -64,7 +58,7 @@ impl ViewerApp {
         painter.image(texture.id(), image_rect, uv, egui::Color32::WHITE);
 
         if view.zoom >= MIN_LABEL_ZOOM {
-            Self::draw_pixel_values(&painter, rect, image_rect, view.zoom, image_size, volume, frame);
+            Self::draw_pixel_values(&painter, rect, image_rect, view.zoom, image_size, volume);
         }
     }
 
@@ -75,20 +69,19 @@ impl ViewerApp {
         zoom: f32,
         image_size: egui::Vec2,
         volume: &Volume,
-        frame: usize,
     ) {
         let first = ((rect.min - image_rect.min) / zoom).floor().max(egui::Vec2::ZERO);
 
         let last = ((rect.max - image_rect.min) / zoom).ceil().min(image_size);
-        let font = if volume.is_color() { egui::FontId::monospace(10.0) } else { egui::FontId::monospace(12.0) };
+        let font = egui::FontId::monospace(10.0);
 
         for y in first.y as usize..last.y as usize {
             for x in first.x as usize..last.x as usize {
-                let Some(val) = volume.pixel_value(frame, x, y) else {
+                let Some(val) = volume.pixel_value(x, y) else {
                     continue;
                 };
 
-                let text = format!("{val}");
+                let text = format!("{}\n{}\n{}", val[0], val[1], val[2]);
                 let center = image_rect.min + egui::vec2(x as f32 + 0.5, y as f32 + 0.5) * zoom;
 
                 painter.text(

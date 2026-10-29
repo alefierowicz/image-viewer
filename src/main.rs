@@ -1,12 +1,11 @@
 mod app;
-mod dicom;
-mod dtype;
-mod pixel;
+mod loader;
 mod theme;
 mod volume;
+
 fn main() -> eframe::Result {
     eframe::run_native(
-        "DICOM Viewer",
+        "PPM Viewer",
         eframe::NativeOptions::default(),
         Box::new(|cc| {
             theme::apply(&cc.egui_ctx);

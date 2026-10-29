@@ -1,4 +1,4 @@
-## Przeglądarka DICOM
+## Przeglądarka PPM
 
 Przeglądarka obrazów medycznych `.dcm` wraz z ich metadanymi.
 
