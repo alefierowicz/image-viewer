@@ -1,3 +1,5 @@
+use crate::ppm::PPMFormat;
+
 mod getters;
 mod render;
 
