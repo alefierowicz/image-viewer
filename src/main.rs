@@ -1,4 +1,5 @@
 mod app;
+mod jpeg;
 mod loader;
 mod ppm;
 mod theme;
