@@ -54,7 +54,7 @@ impl<'a> Reader<'a> {
 
         if self.pos == start {
             return match self.bytes.get(self.pos) {
-                None => Err("unexpected EOF in header".into()),
+                None => Err(format!("unexpected EOF at byte {}", self.pos)),
                 Some(b) => Err(format!("expected a number at byte {}, found '{}'", self.pos, *b as char)),
             };
         }
@@ -93,7 +93,7 @@ pub fn parse(bytes: &[u8]) -> Result<Volume, String> {
     }
     // checking for overflow on bad files
     let Some(samples) = (width as usize).checked_mul(height as usize).and_then(|n| n.checked_mul(3)) else {
-        return Err("image too big!".into());
+        return Err("image too big! aborting to prevent overflow".into());
     };
 
     if maxval > u16::MAX as u32 {
@@ -104,7 +104,7 @@ pub fn parse(bytes: &[u8]) -> Result<Volume, String> {
     }
     let data = match format {
         PPMFormat::P6 => read_p6(&bytes[reader.pos..], samples, width as usize, maxval)?,
-        PPMFormat::P3 => return Err("not yet implemented".into()),
+        PPMFormat::P3 => read_p3(&mut reader, samples, width as usize, maxval)?,
     };
     Volume::new(width as usize, height as usize, maxval as u16, data)
 }
@@ -136,5 +136,27 @@ fn read_p6(data: &[u8], samples: usize, width: usize, maxval: u32) -> Result<Vec
         ));
     }
 
+    Ok(output)
+}
+
+fn read_p3(reader: &mut Reader, samples: usize, width: usize, maxval: u32) -> Result<Vec<u16>, String> {
+    let mut output: Vec<u16> = Vec::with_capacity(samples);
+
+    for num in 0..samples {
+        let pixel = num / 3;
+        let v = reader.read_uint().map_err(|e| {
+            format!("pixel data, sample {} of {} (pixel ({}, {})): {e}", num + 1, samples, pixel % width, pixel / width)
+        })?;
+        if v > maxval {
+            return Err(format!(
+                "sample value {} exceeds maxval {} at pixel ({}, {})",
+                v,
+                maxval,
+                pixel % width,
+                pixel / width
+            ));
+        }
+        output.push(v as u16);
+    }
     Ok(output)
 }
