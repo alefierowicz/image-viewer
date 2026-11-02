@@ -82,12 +82,6 @@ pub fn parse(bytes: &[u8]) -> Result<Volume, String> {
     let height = reader.read_uint()?;
     let maxval = reader.read_uint()?;
 
-    match bytes.get(reader.pos) {
-        Some(b) if b.is_ascii_whitespace() => reader.pos += 1,
-        Some(b) => return Err(format!("expected whitespace after max value, got {}", *b as char)),
-        None => return Err("file ended right after header.".into()),
-    }
-
     if width == 0 || height == 0 {
         return Err(format!("invalid image dimension: {} x {}", width, height));
     }
@@ -103,22 +97,40 @@ pub fn parse(bytes: &[u8]) -> Result<Volume, String> {
         return Err(format!("maximum value cannot be zero"));
     }
     let data = match format {
-        PPMFormat::P6 => read_p6(&bytes[reader.pos..], samples, width as usize, maxval)?,
+        PPMFormat::P6 => read_p6(bytes, reader.pos, samples, width as usize, maxval)?,
         PPMFormat::P3 => read_p3(&mut reader, samples, width as usize, maxval)?,
     };
     Volume::new(width as usize, height as usize, maxval as u16, data)
 }
 
-fn read_p6(data: &[u8], samples: usize, width: usize, maxval: u32) -> Result<Vec<u16>, String> {
+fn read_p6(bytes: &[u8], header_end: usize, samples: usize, width: usize, maxval: u32) -> Result<Vec<u16>, String> {
     let bytes_per_sample = if maxval < 256 { 1 } else { 2 };
     let Some(expected) = samples.checked_mul(bytes_per_sample) else { return Err("invalid file length.".into()) };
 
-    if data.len() < expected {
-        return Err(format!("truncated file: expected {} bytes, got {}", expected, data.len()));
+    let after_header = bytes.len() - header_end;
+    if after_header < expected + 1 {
+        return Err(format!(
+            "truncated file: expected {} bytes of pixel data, got {}",
+            expected,
+            after_header.saturating_sub(1)
+        ));
     }
-    if data.len() > expected {
-        return Err(format!("{} unexpected bytes after the pixel data", data.len() - expected));
+
+    let data_start = bytes.len() - expected;
+    let gap = &bytes[header_end..data_start];
+
+    // accounting for the possibility of filler data between headers and data
+    // ie. additional comments, whitespaces of whatever
+    let mut filler = Reader { bytes: gap, pos: 0 };
+    filler.skip_whitespace_and_comments();
+    if filler.pos != gap.len() {
+        return Err(format!(
+            "unexpected data at byte {} - the file is longer than its header describes",
+            header_end + filler.pos
+        ));
     }
+    let data = &bytes[data_start..];
+
     // conversion
     let output: Vec<u16> = match bytes_per_sample {
         1 => data.iter().map(|&b| b as u16).collect(),
