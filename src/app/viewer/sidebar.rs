@@ -9,6 +9,12 @@ impl ViewerApp {
             if ui.button("open file").clicked() {
                 self.open_dialog();
             }
+            if ui.button("export to JPEG").clicked() {
+                // this WILL crash when loading a texture with a side length greater than 8192,
+                // i can't be bothered to implement tiling as of yet sooooooooo
+                self.save_dialog();
+            }
+            ui.add(egui::Slider::new(&mut self.jpeg_quality, 1..=100).text("JPEG quality"));
             let Some(file) = &self.file else { return };
             if let Some(msg) = &self.error {
                 let red = ui.visuals().error_fg_color;

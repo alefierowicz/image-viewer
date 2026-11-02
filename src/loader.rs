@@ -16,6 +16,7 @@ pub fn load_file(path: &Path) -> Result<LoadedFile, String> {
     } else {
         return Err("unsupported file format".into());
     }?;
-
+    // TEST
+    // jpeg::save(&volume, Path::new("test.jpg"), 90).unwrap();
     Ok(LoadedFile { name: os_file_name.to_string_lossy().into(), volume })
 }
