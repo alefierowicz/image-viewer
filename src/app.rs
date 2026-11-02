@@ -46,7 +46,7 @@ impl ViewerApp {
             .set_file_name(name_as_jpeg.to_string_lossy())
             .save_file()
         {
-            None => return,
+            None => (),
             Some(path) => match jpeg::save(&file.volume, &path, self.jpeg_quality) {
                 Ok(_) => println!("file saved successfully: {}", &path.display()),
                 Err(msg) => self.error = Some(msg),

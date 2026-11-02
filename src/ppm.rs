@@ -63,9 +63,7 @@ impl<'a> Reader<'a> {
         let Ok(value) = std::str::from_utf8(digits) else {
             return Err("failure converting digits to u32".into());
         };
-        let output = value.parse::<u32>().map_err(|e| e.to_string());
-
-        output
+        value.parse::<u32>().map_err(|e| e.to_string())
     }
 }
 
@@ -94,7 +92,7 @@ pub fn parse(bytes: &[u8]) -> Result<Volume, String> {
         return Err(format!("maximum value {} out of range: 1-65535", maxval));
     }
     if maxval == 0 {
-        return Err(format!("maximum value cannot be zero"));
+        return Err("maximum value cannot be zero".into());
     }
     let data = match format {
         PPMFormat::P6 => read_p6(bytes, reader.pos, samples, width as usize, maxval)?,
