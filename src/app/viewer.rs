@@ -1,6 +1,6 @@
 mod canvas;
 mod controls;
-mod sidebar;
+mod header;
 
 use eframe::egui;
 
@@ -13,7 +13,7 @@ pub(super) struct View {
 
 impl ViewerApp {
     pub(super) fn show_main(&mut self, ui: &mut egui::Ui) {
-        self.show_sidebar(ui);
+        self.show_header(ui);
         self.show_controls(ui);
         self.update_texture(ui);
         self.show_canvas(ui);
