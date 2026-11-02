@@ -1,5 +1,15 @@
 use crate::volume::Volume;
+use image::ImageFormat::Jpeg;
+use image::load_from_memory_with_format;
 
 pub fn parse(bytes: &[u8]) -> Result<Volume, String> {
-    todo!()
+    let result =
+        load_from_memory_with_format(bytes, Jpeg).map_err(|e| format!("failed to load bytes as jpeg: {e}"))?.to_rgb8();
+    // no need for robust error checking here imo since the func above does most of it for us, should map to a string properly
+    let width = result.width();
+    let height = result.height();
+
+    let data: Vec<u16> = result.into_raw().iter().map(|b| *b as u16).collect();
+
+    Volume::new(width as usize, height as usize, u8::MAX as u16, data)
 }
